@@ -1,0 +1,47 @@
+services:
+  kanboard-mcp:
+    build: .
+    container_name: kanboard-mcp-server
+    ports:
+      - "${MCP_PORT:-8080}:8080"
+    environment:
+      - MCP_PORT=8080
+      - MCP_HOST=0.0.0.0
+      - DEFAULT_KANBOARD_URL=${DEFAULT_KANBOARD_URL}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - DATA_DIR=/app/data
+      - KANBOARD_TIMEOUT=${KANBOARD_TIMEOUT:-30s}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    networks:
+      - kanboard-mcp-network
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: kanboard-mcp-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - kanboard-mcp
+    restart: unless-stopped
+    networks:
+      - kanboard-mcp-network
+
+networks:
+  kanboard-mcp-network:
+    driver: bridge
+
+volumes:
+  caddy_data:
+    external: false
+  caddy_config:
+    external: false

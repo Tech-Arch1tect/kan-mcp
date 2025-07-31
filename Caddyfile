@@ -1,0 +1,28 @@
+{$DOMAIN:localhost} {
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+    handle /* {
+        reverse_proxy kanboard-mcp:8080 {
+            header_up Host {upstream_hostport}
+            header_up X-Real-IP {remote_addr}
+            header_up X-Forwarded-For {remote_addr}
+        }
+    }
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 100MB
+            roll_keep 3
+        }
+        format json
+        level INFO
+    }
+    handle_errors {
+        respond "Error {http.error.status_code}: {http.error.status_text}" {http.error.status_code}
+    }
+}
