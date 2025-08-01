@@ -162,6 +162,27 @@ func (s *KanboardMCPServer) addTools() {
 		),
 	)
 	s.server.AddTool(prioritiesTool, s.handlePriorities)
+
+	analyticsTool := mcp.NewTool("kanboard_analytics",
+		mcp.WithDescription("Perform historical data analysis and trend identification"),
+		mcp.WithString("user_id",
+			mcp.Description("User ID for authentication"),
+			mcp.Required(),
+		),
+		mcp.WithString("project_ids",
+			mcp.Description("Optional: comma-separated list of project IDs to filter by"),
+		),
+		mcp.WithString("time_range",
+			mcp.Description("Time range for analysis: '7_days', '30_days', '90_days', '6_months', '1_year' (default: 30_days)"),
+		),
+		mcp.WithString("analysis_types",
+			mcp.Description("Comma-separated analysis types: 'completion_trends', 'cycle_time', 'velocity', 'task_aging', 'burndown', 'project_health' (default: all)"),
+		),
+		mcp.WithString("group_by",
+			mcp.Description("Group results by: 'project', 'user', 'time' (default: project)"),
+		),
+	)
+	s.server.AddTool(analyticsTool, s.handleAnalytics)
 }
 
 func (s *KanboardMCPServer) handleOverview(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -305,6 +326,51 @@ func (s *KanboardMCPServer) handlePriorities(ctx context.Context, request mcp.Ca
 	response, err := prioritiesHandler.Handle(params, userID)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("priorities failed: %v", err)), nil
+	}
+
+	if len(response.Content) > 0 {
+		return mcp.NewToolResultText(response.Content[0].Text), nil
+	}
+
+	return mcp.NewToolResultText("{}"), nil
+}
+
+func (s *KanboardMCPServer) handleAnalytics(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+
+	args := request.GetArguments()
+
+	userID, ok := args["user_id"].(string)
+	if !ok || userID == "" {
+		return mcp.NewToolResultError("Missing required parameter: user_id. Please ask the user for their User ID and include it in the tool call. Users can find their User ID by running: ./kan-mcp cli list"), nil
+	}
+
+	params := make(map[string]interface{})
+
+	if val, ok := args["project_ids"]; ok {
+		if str, ok := val.(string); ok && str != "" {
+			params["project_ids"] = strings.Split(str, ",")
+		}
+	}
+
+	if val, ok := args["time_range"]; ok {
+		params["time_range"] = val
+	}
+
+	if val, ok := args["analysis_types"]; ok {
+		if str, ok := val.(string); ok && str != "" {
+			params["analysis_types"] = strings.Split(str, ",")
+		}
+	}
+
+	if val, ok := args["group_by"]; ok {
+		params["group_by"] = val
+	}
+
+	analyticsHandler := handlers.NewAnalyticsHandler(s.authManager, s.userConfig)
+
+	response, err := analyticsHandler.Handle(params, userID)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("analytics failed: %v", err)), nil
 	}
 
 	if len(response.Content) > 0 {
