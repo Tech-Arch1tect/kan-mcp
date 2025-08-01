@@ -98,8 +98,6 @@ func (c *Client) GetMyProjectsRaw() (json.RawMessage, error) {
 	return c.makeRawRequest("getMyProjects", nil)
 }
 
-
-
 func (c *Client) GetProjectUsers(projectID int) ([]models.KanboardUser, error) {
 	resp, err := c.makeRequest("getProjectUsers", map[string]interface{}{"project_id": projectID})
 	if err != nil {
@@ -163,7 +161,6 @@ func (c *Client) GetProjectUsers(projectID int) ([]models.KanboardUser, error) {
 	return users, nil
 }
 
-
 func (c *Client) GetTasksByProject(projectID int) ([]models.Task, error) {
 	resp, err := c.makeRequest("getAllTasks", map[string]interface{}{"project_id": projectID})
 	if err != nil {
@@ -177,8 +174,6 @@ func (c *Client) GetTasksByProject(projectID int) ([]models.Task, error) {
 
 	return tasks, nil
 }
-
-
 
 func (c *Client) GetColumns(projectID int) ([]models.Column, error) {
 	resp, err := c.makeRequest("getColumns", map[string]interface{}{"project_id": projectID})

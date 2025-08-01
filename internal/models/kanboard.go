@@ -86,7 +86,6 @@ func (kt *KanboardTime) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 type Task struct {
 	ID                  int          `json:"id"`
 	Title               string       `json:"title"`
@@ -138,7 +137,6 @@ type Swimlane struct {
 	ProjectID   int          `json:"project_id"`
 	Description string       `json:"description"`
 }
-
 
 type KanboardUser struct {
 	ID                   int            `json:"id"`

@@ -115,7 +115,7 @@ func (s *KanboardMCPServer) addTools() {
 		mcp.WithString("project_ids",
 			mcp.Description("Optional: comma-separated list of project IDs to filter by"),
 		),
-		mcp.WithString("assignee_ids", 
+		mcp.WithString("assignee_ids",
 			mcp.Description("Optional: comma-separated list of assignee user IDs to filter by"),
 		),
 		mcp.WithString("status_filter",
@@ -144,12 +144,30 @@ func (s *KanboardMCPServer) addTools() {
 		),
 	)
 	s.server.AddTool(tasksTool, s.handleTasks)
+
+	prioritiesTool := mcp.NewTool("kanboard_priorities",
+		mcp.WithDescription("Analyse workload and provide priority recommendations"),
+		mcp.WithString("user_id",
+			mcp.Description("User ID for authentication"),
+			mcp.Required(),
+		),
+		mcp.WithString("project_ids",
+			mcp.Description("Optional: comma-separated list of project IDs to filter by"),
+		),
+		mcp.WithString("time_horizon",
+			mcp.Description("Time horizon for analysis: 'today', 'week', or 'month' (default: week)"),
+		),
+		mcp.WithBoolean("include_recommendations",
+			mcp.Description("Include priority recommendations (default: true)"),
+		),
+	)
+	s.server.AddTool(prioritiesTool, s.handlePriorities)
 }
 
 func (s *KanboardMCPServer) handleOverview(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 
 	args := request.GetArguments()
-	
+
 	userID, ok := args["user_id"].(string)
 	if !ok || userID == "" {
 		return mcp.NewToolResultError("Missing required parameter: user_id. Please ask the user for their User ID and include it in the tool call. Users can find their User ID by running: ./kan-mcp cli list"), nil
@@ -182,7 +200,7 @@ func (s *KanboardMCPServer) handleOverview(ctx context.Context, request mcp.Call
 func (s *KanboardMCPServer) handleTasks(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 
 	args := request.GetArguments()
-	
+
 	userID, ok := args["user_id"].(string)
 	if !ok || userID == "" {
 		return mcp.NewToolResultError("Missing required parameter: user_id. Please ask the user for their User ID and include it in the tool call. Users can find their User ID by running: ./kan-mcp cli list"), nil
@@ -248,6 +266,45 @@ func (s *KanboardMCPServer) handleTasks(ctx context.Context, request mcp.CallToo
 	response, err := tasksHandler.Handle(params, userID)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("tasks failed: %v", err)), nil
+	}
+
+	if len(response.Content) > 0 {
+		return mcp.NewToolResultText(response.Content[0].Text), nil
+	}
+
+	return mcp.NewToolResultText("{}"), nil
+}
+
+func (s *KanboardMCPServer) handlePriorities(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+
+	args := request.GetArguments()
+
+	userID, ok := args["user_id"].(string)
+	if !ok || userID == "" {
+		return mcp.NewToolResultError("Missing required parameter: user_id. Please ask the user for their User ID and include it in the tool call. Users can find their User ID by running: ./kan-mcp cli list"), nil
+	}
+
+	params := make(map[string]interface{})
+
+	if val, ok := args["project_ids"]; ok {
+		if str, ok := val.(string); ok && str != "" {
+			params["project_ids"] = strings.Split(str, ",")
+		}
+	}
+
+	if val, ok := args["time_horizon"]; ok {
+		params["time_horizon"] = val
+	}
+
+	if val, ok := args["include_recommendations"]; ok {
+		params["include_recommendations"] = val
+	}
+
+	prioritiesHandler := handlers.NewPrioritiesHandler(s.authManager, s.userConfig)
+
+	response, err := prioritiesHandler.Handle(params, userID)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("priorities failed: %v", err)), nil
 	}
 
 	if len(response.Content) > 0 {

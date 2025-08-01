@@ -69,4 +69,3 @@ func (e *Encryptor) Decrypt(ciphertext string) (string, error) {
 
 	return string(plaintext), nil
 }
-
