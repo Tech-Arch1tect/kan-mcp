@@ -4,7 +4,7 @@ A work-in-progress MCP (Model Context Protocol) server that provides access to K
 
 ## Features
 
-- Two tools: `kanboard_overview` and `kanboard_tasks`
+- Four tools: `kanboard_overview`, `kanboard_tasks`, `kanboard_priorities`, and `kanboard_analytics`
 - Secure token storage with encryption
 - Multi-user support with CLI management
 - Both ~stdio and HTTP transport support
@@ -56,6 +56,7 @@ go run ./cmd/server -transport http
 - `kanboard_overview` - Get overview of accessible projects with columns, swimlanes, users, and optional task counts
 - `kanboard_tasks` - Get detailed task information with filtering, sorting, and priority analysis
 - `kanboard_priorities` - Analyse workload and provide priority recommendations
+- `kanboard_analytics` - Perform historical data analysis and trend identification
 
 ### `kanboard_tasks`
 
@@ -79,6 +80,15 @@ go run ./cmd/server -transport http
 - `project_ids` (optional) - Comma-separated list of project IDs to filter by
 - `time_horizon` (optional) - Time horizon for analysis: 'today', 'week', or 'month' (default: week)
 - `include_recommendations` (optional) - Include priority recommendations (default: true)
+
+### `kanboard_analytics`
+
+**Parameters:**
+- `user_id` (required) - User ID for authentication
+- `project_ids` (optional) - Comma-separated list of project IDs to filter by
+- `time_range` (optional) - Time range for analysis: '7_days', '30_days', '90_days', '6_months', '1_year' (default: 30_days)
+- `analysis_types` (optional) - Comma-separated analysis types: 'completion_trends', 'cycle_time', 'velocity', 'task_aging', 'burndown', 'project_health' (default: all)
+- `group_by` (optional) - Group results by: 'project', 'user', 'time' (default: project)
 
 ## Building
 
