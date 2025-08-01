@@ -55,6 +55,7 @@ go run ./cmd/server -transport http
 
 - `kanboard_overview` - Get overview of accessible projects with columns, swimlanes, users, and optional task counts
 - `kanboard_tasks` - Get detailed task information with filtering, sorting, and priority analysis
+- `kanboard_priorities` - Analyse workload and provide priority recommendations
 
 ### `kanboard_tasks`
 
@@ -70,6 +71,14 @@ go run ./cmd/server -transport http
 - `sort_by` (optional) - Sort by 'due_date', 'priority', or 'created' (default: due_date)
 - `limit` (optional) - Maximum tasks to return (default: 20, max: 100/200)
 - `summary_mode` (optional) - Return lightweight summaries vs full details (default: true)
+
+### `kanboard_priorities`
+
+**Parameters:**
+- `user_id` (required) - User ID for authentication  
+- `project_ids` (optional) - Comma-separated list of project IDs to filter by
+- `time_horizon` (optional) - Time horizon for analysis: 'today', 'week', or 'month' (default: week)
+- `include_recommendations` (optional) - Include priority recommendations (default: true)
 
 ## Building
 
