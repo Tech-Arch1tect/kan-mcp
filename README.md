@@ -4,7 +4,7 @@ A work-in-progress MCP (Model Context Protocol) server that provides access to K
 
 ## Features
 
-- Single tool: `kanboard_overview` - get project overviews with boards and task counts
+- Two tools: `kanboard_overview` and `kanboard_tasks`
 - Secure token storage with encryption
 - Multi-user support with CLI management
 - Both ~stdio and HTTP transport support
@@ -51,9 +51,25 @@ go run ./cmd/server -transport http
 - `DATA_DIR` - Directory for user data storage (default: `./data`)
 - `MCP_PORT` - HTTP server port (default: `8080`)
 
-## Available Tool
+## Available Tools
 
 - `kanboard_overview` - Get overview of accessible projects with columns, swimlanes, users, and optional task counts
+- `kanboard_tasks` - Get detailed task information with filtering, sorting, and priority analysis
+
+### `kanboard_tasks`
+
+**Parameters:**
+- `user_id` (required) - User ID for authentication
+- `project_ids` (optional) - Comma-separated list of project IDs to filter by
+- `assignee_ids` (optional) - Comma-separated list of assignee user IDs to filter by
+- `status_filter` (optional) - Filter by 'active', 'completed', or 'all' (default: active)
+- `due_date_start` (optional) - Filter by due date start (YYYY-MM-DD format)
+- `due_date_end` (optional) - Filter by due date end (YYYY-MM-DD format)
+- `include_overdue` (optional) - Include overdue tasks (default: false)
+- `include_time_tracking` (optional) - Include time tracking information (default: true)
+- `sort_by` (optional) - Sort by 'due_date', 'priority', or 'created' (default: due_date)
+- `limit` (optional) - Maximum tasks to return (default: 20, max: 100/200)
+- `summary_mode` (optional) - Return lightweight summaries vs full details (default: true)
 
 ## Building
 
