@@ -93,6 +93,10 @@ func (s *KanboardMCPServer) addTools() {
 
 	overviewTool := mcp.NewTool("kanboard_overview",
 		mcp.WithDescription("Get complete overview of all accessible projects and their board structures"),
+		mcp.WithString("user_id",
+			mcp.Description("User ID for authentication"),
+			mcp.Required(),
+		),
 		mcp.WithBoolean("include_task_counts",
 			mcp.Description("Include task counts per column (default: true)"),
 		),
@@ -105,12 +109,13 @@ func (s *KanboardMCPServer) addTools() {
 
 func (s *KanboardMCPServer) handleOverview(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 
-	userID, err := userIDFromContext(ctx)
-	if err != nil {
-		return mcp.NewToolResultError("User ID is required. Add ?user_id=your-user-id to the URL"), nil
+	args := request.GetArguments()
+	
+	userID, ok := args["user_id"].(string)
+	if !ok || userID == "" {
+		return mcp.NewToolResultError("Missing required parameter: user_id. Please ask the user for their User ID and include it in the tool call. Users can find their User ID by running: ./kan-mcp cli list"), nil
 	}
 
-	args := request.GetArguments()
 	params := make(map[string]interface{})
 
 	if val, ok := args["include_task_counts"]; ok {
