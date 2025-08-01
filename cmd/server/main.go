@@ -105,6 +105,45 @@ func (s *KanboardMCPServer) addTools() {
 		),
 	)
 	s.server.AddTool(overviewTool, s.handleOverview)
+
+	tasksTool := mcp.NewTool("kanboard_tasks",
+		mcp.WithDescription("Get detailed task information for priority analysis and workload management"),
+		mcp.WithString("user_id",
+			mcp.Description("User ID for authentication"),
+			mcp.Required(),
+		),
+		mcp.WithString("project_ids",
+			mcp.Description("Optional: comma-separated list of project IDs to filter by"),
+		),
+		mcp.WithString("assignee_ids", 
+			mcp.Description("Optional: comma-separated list of assignee user IDs to filter by"),
+		),
+		mcp.WithString("status_filter",
+			mcp.Description("Filter tasks by status: 'active', 'completed', or 'all' (default: active)"),
+		),
+		mcp.WithString("due_date_start",
+			mcp.Description("Optional: filter by due date start (YYYY-MM-DD format)"),
+		),
+		mcp.WithString("due_date_end",
+			mcp.Description("Optional: filter by due date end (YYYY-MM-DD format)"),
+		),
+		mcp.WithBoolean("include_overdue",
+			mcp.Description("Include overdue tasks (default: false)"),
+		),
+		mcp.WithBoolean("include_time_tracking",
+			mcp.Description("Include time tracking information (default: true)"),
+		),
+		mcp.WithString("sort_by",
+			mcp.Description("Sort tasks by: 'due_date', 'priority', or 'created' (default: due_date)"),
+		),
+		mcp.WithNumber("limit",
+			mcp.Description("Maximum number of tasks to return (default: 20, max: 100, or 200 in summary mode)"),
+		),
+		mcp.WithBoolean("summary_mode",
+			mcp.Description("Return lightweight task summaries instead of full details (default: true)"),
+		),
+	)
+	s.server.AddTool(tasksTool, s.handleTasks)
 }
 
 func (s *KanboardMCPServer) handleOverview(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -131,6 +170,84 @@ func (s *KanboardMCPServer) handleOverview(ctx context.Context, request mcp.Call
 	response, err := overviewHandler.Handle(params, userID)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("overview failed: %v", err)), nil
+	}
+
+	if len(response.Content) > 0 {
+		return mcp.NewToolResultText(response.Content[0].Text), nil
+	}
+
+	return mcp.NewToolResultText("{}"), nil
+}
+
+func (s *KanboardMCPServer) handleTasks(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+
+	args := request.GetArguments()
+	
+	userID, ok := args["user_id"].(string)
+	if !ok || userID == "" {
+		return mcp.NewToolResultError("Missing required parameter: user_id. Please ask the user for their User ID and include it in the tool call. Users can find their User ID by running: ./kan-mcp cli list"), nil
+	}
+
+	params := make(map[string]interface{})
+
+	if val, ok := args["project_ids"]; ok {
+		if str, ok := val.(string); ok && str != "" {
+			params["project_ids"] = strings.Split(str, ",")
+		}
+	}
+
+	if val, ok := args["assignee_ids"]; ok {
+		if str, ok := val.(string); ok && str != "" {
+			params["assignee_ids"] = strings.Split(str, ",")
+		}
+	}
+
+	if val, ok := args["status_filter"]; ok {
+		params["status_filter"] = val
+	}
+
+	if startVal, ok := args["due_date_start"]; ok {
+		if endVal, ok := args["due_date_end"]; ok {
+			params["due_date_range"] = map[string]interface{}{
+				"start": startVal,
+				"end":   endVal,
+			}
+		} else if startVal != nil {
+			params["due_date_range"] = map[string]interface{}{
+				"start": startVal,
+			}
+		}
+	} else if endVal, ok := args["due_date_end"]; ok {
+		params["due_date_range"] = map[string]interface{}{
+			"end": endVal,
+		}
+	}
+
+	if val, ok := args["include_overdue"]; ok {
+		params["include_overdue"] = val
+	}
+
+	if val, ok := args["include_time_tracking"]; ok {
+		params["include_time_tracking"] = val
+	}
+
+	if val, ok := args["sort_by"]; ok {
+		params["sort_by"] = val
+	}
+
+	if val, ok := args["limit"]; ok {
+		params["limit"] = val
+	}
+
+	if val, ok := args["summary_mode"]; ok {
+		params["summary_mode"] = val
+	}
+
+	tasksHandler := handlers.NewTasksHandler(s.authManager, s.userConfig)
+
+	response, err := tasksHandler.Handle(params, userID)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("tasks failed: %v", err)), nil
 	}
 
 	if len(response.Content) > 0 {
